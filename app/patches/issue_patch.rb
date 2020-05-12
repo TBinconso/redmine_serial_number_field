@@ -11,14 +11,23 @@ module SerialNumberField
     def assign_serial_number!
       serial_number_fields.each do |cf|
         next if assigned_serial_number?(cf)
-
         target_custom_value = serial_number_custom_value(cf)
-        new_serial_number = cf.format.generate_value(cf, self)
 
-        if target_custom_value.present?
-          target_custom_value.update_attributes!(
-            :value => new_serial_number)
+        if !self.parent_id.nil?
+          new_serial_number = serial_number_parent_value(cf)
+          if new_serial_number.present?
+            target_custom_value.update_attributes!(
+              :value => new_serial_number)
+          end
+        else
+          new_serial_number = cf.format.generate_value(cf, self)
+          if new_serial_number.present?
+            target_custom_value.update_attributes!(
+              :value => new_serial_number)
+          end
         end
+
+        
       end
     end
 
@@ -30,6 +39,12 @@ module SerialNumberField
       CustomValue.where(:custom_field_id => cf.id,
         :customized_type => 'Issue',
         :customized_id => self.id).first
+    end
+
+    def serial_number_parent_value(cf)
+      CustomValue.where(:custom_field_id => cf.id,
+        :customized_type => 'Issue',
+        :customized_id => self.parent_id).first
     end
 
     def serial_number_fields
